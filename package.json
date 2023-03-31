@@ -1,0 +1,21 @@
+{
+  "name": "kaos-at-the-door-backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "source/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "nodemon -r dotenv/config source/index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@tschtt/database": "file:../../tools/database",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.21"
+  }
+}

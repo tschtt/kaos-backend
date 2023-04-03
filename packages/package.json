@@ -1,0 +1,5 @@
+{
+  "name": "@tschtt/global",
+  "main": "index.js",
+  "type": "module"
+}

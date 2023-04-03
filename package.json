@@ -10,6 +10,10 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "workspaces": [
+    "packages",
+    "packages/*"
+  ],
   "dependencies": {
     "@tschtt/database": "file:../../tools/database",
     "dotenv": "^16.0.3",

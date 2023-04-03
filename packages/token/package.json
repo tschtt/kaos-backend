@@ -1,0 +1,8 @@
+{
+  "name": "@tschtt/token",
+  "main": "index.js",
+  "type": "module",
+  "dependencies": {
+    "jsonwebtoken": "^8.5.1"
+  }
+}

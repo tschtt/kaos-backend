@@ -1,1 +1,2 @@
-export * as tickets from './tickets/tickets-controller.js'
+export * as tickets from './tickets/controller.js'
+export * as sessions from './sessions/controller.js'

@@ -6,6 +6,8 @@ const ORIGINS = process.env.ORIGINS.split(',')
 
 const app = express()
 
+app.use(express.json())
+
 app.use((req, res, next) => {
     if (ORIGINS.includes(req.headers.origin)) {
         res.header('Access-Control-Allow-Origin', req.headers.origin)
@@ -16,7 +18,13 @@ app.use((req, res, next) => {
     next()
 })
 
+app.post('/sessions', controllers.sessions.login)
+app.patch('/sessions', controllers.sessions.refresh)
+app.delete('/sessions', controllers.sessions.logout)
+
+app.patch('/tickets/:id', controllers.tickets.update);
 app.get('/tickets', controllers.tickets.filter);
+app.post('/tickets', controllers.tickets.create);
 
 app.listen(PORT, () => {
     console.log(`Listening on port ${PORT}`)

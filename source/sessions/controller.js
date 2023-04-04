@@ -44,8 +44,10 @@ export async function login(req, res) {
 }
 
 export async function logout(req, res) {
-  const fk_user = req.auth.payload.id
+  const fk_user = req.auth.id
+  
   await sessions.remove({ fk_user })
+  
   res.send({
     success: true,
     message: 'Se cerró la sesión',

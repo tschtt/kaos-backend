@@ -1,5 +1,7 @@
 import express from 'express'
 import * as controllers from './controllers.js'
+import { token } from '@tschtt/global'
+import { UnauthorizedError } from './errors.js'
 
 const PORT = process.env.PORT
 const ORIGINS = process.env.ORIGINS.split(',')
@@ -22,6 +24,32 @@ function handler(endpoint){
     }
 } 
 
+function authed (req, res, next) {
+    const authorization = req.headers.authorization
+
+    if (!authorization) {
+        throw new UnauthorizedError('el header authorization no esta definido')
+    }
+
+    const auth_prefix = authorization.split(' ')[0]
+    const auth_token = authorization.split(' ')[1]
+
+    if (auth_prefix.toLowerCase() !== 'bearer') {
+        throw new UnauthorizedError('el encabezado de autorizacion no cumple con el formato requerido')
+    }
+
+    const payload = token.decode(auth_token)
+
+
+    if (payload.type !== 'access') {
+        throw new AuthenticationFailedError('el token provisto no es valido')
+    }
+
+    req.auth = payload
+
+    next()
+}
+
 function errorHandler(error, req, res, next) {
     console.log(error)
     switch (error.name) {
@@ -42,17 +70,17 @@ const app = express()
 app.use(express.json())
 app.use(cors)
 
-app.delete('/sessions', handler(controllers.sessions.logout))
-app.patch('/sessions', handler(controllers.sessions.refresh))
-app.post('/sessions', handler(controllers.sessions.login))
+app.delete('/session', authed, handler(controllers.sessions.logout))
+app.patch('/session', handler(controllers.sessions.refresh))
+app.post('/session', handler(controllers.sessions.login))
 
-app.patch('/tickets/:id', handler(controllers.tickets.update));
-app.post('/tickets', handler(controllers.tickets.create));
-app.get('/tickets', handler(controllers.tickets.filter));
+app.patch('/tickets/:id', authed, handler(controllers.tickets.update));
+app.post('/tickets', authed, handler(controllers.tickets.create));
+app.get('/tickets', authed, handler(controllers.tickets.filter));
 
-app.all('*', (req, res) => {
-    res.status(404).send({ success: false, message: 'Resource not found' })
-})
+// app.all('*', (req, res) => {
+//     res.status(404).send({ success: false, message: 'Resource not found' })
+// })
 
 app.use(errorHandler)
 

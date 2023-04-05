@@ -4,12 +4,12 @@ const KEY = process.env.TOKEN_KEY
 const EXPIRATION = process.env.TOKEN_EXPIRATION
 const ALGORITHM = process.env.TOKEN_ALGORITHM || 'HS256'
 
-class AuthenticationFailedError extends Error {
+class InvalidTokenError extends Error {
   constructor(message) {
-    super(`No se pudo autenticar su pedido: ${message}`)
-    this.name = 'AuthenticationFailedError'
+    super(message || 'Invalid Token')
+    this.name = 'InvalidTokenError'
     if (Error.captureStackTrace) {
-      Error.captureStackTrace(this, AuthenticationFailedError)
+      Error.captureStackTrace(this, InvalidTokenError)
     }
   }
 }
@@ -37,7 +37,7 @@ export function decode(token, options = {}) {
   try {
     return jwt.verify(token, key, jwt_options)
   } catch {
-    throw new AuthenticationFailedError('el token provisto no es valido')
+    throw new InvalidTokenError()
   }
 }
 

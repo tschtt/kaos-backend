@@ -3,13 +3,13 @@ import * as controllers from './controllers.js'
 import { token } from '@tschtt/global'
 import { UnauthorizedError } from './errors.js'
 
-const PORT = process.env.PORT
-const ORIGINS = process.env.ORIGINS.split(',')
+const PORT = process.env.APP_PORT
+const ALLOWED_ORIGINS = process.env.APP_ALLOWED_ORIGINS.split(',')
 
 // middleware
 
 function cors(req, res, next) {
-    if (ORIGINS.includes(req.headers.origin)) {
+    if (ALLOWED_ORIGINS.includes(req.headers.origin)) {
         res.header('Access-Control-Allow-Origin', req.headers.origin)
         res.header('Access-Control-Allow-Headers', 'Authorization, X-API-KEY, Origin, X-Requested-With, Content-Type, Accept, Access-Control-Allow-Request-Method')
         res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE')
@@ -28,21 +28,20 @@ function authed (req, res, next) {
     const authorization = req.headers.authorization
 
     if (!authorization) {
-        throw new UnauthorizedError('el header authorization no esta definido')
+        throw new UnauthorizedError('Authorization header missing')
     }
 
     const auth_prefix = authorization.split(' ')[0]
     const auth_token = authorization.split(' ')[1]
 
     if (auth_prefix.toLowerCase() !== 'bearer') {
-        throw new UnauthorizedError('el encabezado de autorizacion no cumple con el formato requerido')
+        throw new UnauthorizedError('Authorization header malformed')
     }
 
     const payload = token.decode(auth_token)
 
-
     if (payload.type !== 'access') {
-        throw new AuthenticationFailedError('el token provisto no es valido')
+        throw new AuthenticationFailedError('Invalid token')
     }
 
     req.auth = payload
@@ -53,13 +52,13 @@ function authed (req, res, next) {
 function errorHandler(error, req, res, next) {
     console.log(error)
     switch (error.name) {
-      case 'BadRequestError': 
-        return res.status(400).send({ success: false, message: error.message })
-      case 'UnauthorizedError':
-      case 'AuthenticationFailedError':
-        return res.status(401).send({ success: false, message: error.message })
-      default:
-        return res.status(500).send({ success: false, message: error.message || 'Error interno' })
+        case 'BadRequestError': 
+            return res.status(400).send({ success: false, message: error.message })
+        case 'InvalidTokenError':
+        case 'UnauthorizedError':
+            return res.status(401).send({ success: false, message: error.message })
+        default:
+            return res.status(500).send({ success: false, message: 'Internal error' })
     }
 }
   

@@ -1,6 +1,9 @@
 import { UnauthorizedError, BadRequestError } from '../errors.js'
 import { database, hash, token } from '@tschtt/global'
 
+const EXPIRATION_ACCESS = parseInt(process.env.TOKEN_ACCESS_EXPIRATION)
+const EXPIRATION_REFRESH = parseInt(process.env.TOKEN_REFRESH_EXPIRATION)
+
 const users = database.table('user')
 const sessions = database.table('session')
 
@@ -9,27 +12,27 @@ export async function login(req, res) {
   const password = req.body.password
 
   if (!username) {
-    throw new BadRequestError('Falta el nombre de usuario')
+    throw new BadRequestError('Missing username')
   }
 
   if (!password) {
-    throw new BadRequestError('Falta la contraseña')
+    throw new BadRequestError('Missing password')
   }
 
   const user = await users.find({ username })
 
   if (!user) {
-    throw new BadRequestError('No hay ningun usuario con este nombre')
+    throw new BadRequestError('Could not fin user')
   }
 
   const match = await hash.check(password, user.password)
 
   if (!match) {
-    throw new BadRequestError('La contraseña es incorrecta')
+    throw new BadRequestError('Invalid password')
   }
 
-  const access_token = token.generate({ id: user.id, type: 'access' }, { expiration: 3600 })
-  const refresh_token = token.generate({ id: user.id, type: 'refresh' }, { expiration: 6000 })
+  const access_token = token.generate({ fk_user: user.id, type: 'access' }, { expiration: EXPIRATION_ACCESS })
+  const refresh_token = token.generate({ fk_user: user.id, type: 'refresh' }, { expiration: EXPIRATION_REFRESH })
 
   await sessions.remove({ fk_user: user.id })
   await sessions.create({ fk_user: user.id, refresh_token })
@@ -44,7 +47,7 @@ export async function login(req, res) {
 }
 
 export async function logout(req, res) {
-  const fk_user = req.auth.id
+  const fk_user = req.auth.fk_user
   
   await sessions.remove({ fk_user })
   
@@ -61,24 +64,24 @@ export async function refresh(req, res) {
   const payload = token.decode(header_token)
 
   if (payload.type !== 'refresh') {
-    throw new UnauthorizedError('El token provisto es invalido')
+    throw new UnauthorizedError('Token invalid')
   }
 
-  const session = await sessions.find({ fk_user: payload.id })
+  const session = await sessions.find({ fk_user: payload.fk_user })
 
   if (!session || session.refresh_token !== header_token) {
-    throw new UnauthorizedError('El token provisto esta vencido')
+    throw new UnauthorizedError('Token invalid')
   }
 
-  const user = await users.find({ id: payload.id })
+  const user = await users.find({ id: payload.fk_user })
 
-  delete user.contraseña
+  delete user.password
 
-  const access_token = token.generate({ id: payload.id, type: 'access' }, { expiration: 3600 })
-  const refresh_token = token.generate({ id: payload.id, type: 'refresh' }, { expiration: 6000 })
+  const access_token = token.generate({ fk_user: user.id, type: 'access' }, { expiration: EXPIRATION_ACCESS })
+  const refresh_token = token.generate({ fk_user: user.id, type: 'refresh' }, { expiration: EXPIRATION_REFRESH })
 
-  await sessions.remove({ fk_user: payload.id })
-  await sessions.create({ fk_user: payload.id, refresh_token })
+  await sessions.remove({ fk_user: payload.fk_user })
+  await sessions.create({ fk_user: payload.fk_user, refresh_token })
 
   res.send({
     access_token,

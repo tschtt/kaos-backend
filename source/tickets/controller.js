@@ -1,11 +1,10 @@
 import database from '@tschtt/database'
 
 export async function filter (req, res) {
-    // get event with batches    
+    // get active event    
     const event = await database.find('event', { active: true })    
-    event.batches = await database.filter('batch', { fk_event: event.id })
     
-    // get tickets with person
+    // get tickets for event with person
     const tickets = await database.filter('ticket', { fk_event: event.id })
     const persons = await database.filter('person', { id: tickets.map(t => t.fk_person) })
     for (const ticket of tickets) {
@@ -13,7 +12,6 @@ export async function filter (req, res) {
     }
     
     res.send({
-        event,
         tickets,
     })
 }

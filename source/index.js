@@ -50,7 +50,6 @@ function authed (req, res, next) {
 }
 
 function errorHandler(error, req, res, next) {
-    console.log(error)
     switch (error.name) {
         case 'BadRequestError': 
             return res.status(400).send({ success: false, message: error.message })
@@ -58,6 +57,7 @@ function errorHandler(error, req, res, next) {
         case 'UnauthorizedError':
             return res.status(401).send({ success: false, message: error.message })
         default:
+            console.log(error)
             return res.status(500).send({ success: false, message: 'Internal error' })
     }
 }

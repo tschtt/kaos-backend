@@ -3,7 +3,6 @@ import * as controllers from './controllers.js'
 import { token } from '@tschtt/global'
 import { UnauthorizedError } from './errors.js'
 
-const PORT = process.env.APP_PORT
 const ALLOWED_ORIGINS = process.env.APP_ALLOWED_ORIGINS.split(',')
 
 // middleware
@@ -77,14 +76,6 @@ app.patch('/tickets/:id', authed, handler(controllers.tickets.update));
 app.post('/tickets', authed, handler(controllers.tickets.create));
 app.get('/tickets', authed, handler(controllers.tickets.filter));
 
-// app.all('*', (req, res) => {
-//     res.status(404).send({ success: false, message: 'Resource not found' })
-// })
-
 app.use(errorHandler)
 
-// start
-
-app.listen(PORT, () => {
-    console.log(`Listening on port ${PORT}`)
-})
+export default app

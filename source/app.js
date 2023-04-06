@@ -76,6 +76,8 @@ app.patch('/tickets/:id', authed, handler(controllers.tickets.update));
 app.post('/tickets', authed, handler(controllers.tickets.create));
 app.get('/tickets', authed, handler(controllers.tickets.filter));
 
+app.get('/', (req, res) => res.send({ success: true, message: 'Bienvenido a la API de Kaos Rave!'}))
+
 app.use(errorHandler)
 
 export default app

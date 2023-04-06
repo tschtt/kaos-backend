@@ -15,7 +15,7 @@
     "packages/*"
   ],
   "dependencies": {
-    "@tschtt/database": "file:../../tools/database",
+    "@tschtt/database": "^0.1.1",
     "dotenv": "^16.0.3",
     "express": "^4.18.2"
   },

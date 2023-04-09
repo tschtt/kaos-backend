@@ -1,9 +1,12 @@
 import express from 'express'
+import multer from 'multer'
 import * as controllers from './controllers.js'
 import { token } from '@tschtt/global'
 import { UnauthorizedError } from './errors.js'
 
 const ALLOWED_ORIGINS = process.env.APP_ALLOWED_ORIGINS.split(',')
+
+const upload = multer({ dest: 'static/uploads' })
 
 // middleware
 
@@ -68,10 +71,15 @@ const app = express()
 app.use(express.json())
 app.use(cors)
 
-app.delete('/session', authed, handler(controllers.sessions.logout))
-app.patch('/session', handler(controllers.sessions.refresh))
 app.post('/session', handler(controllers.sessions.login))
+app.patch('/session', handler(controllers.sessions.refresh))
+app.delete('/session', authed, handler(controllers.sessions.logout))
 
+app.get('/export', authed, handler(controllers.batch.exportXLSX))
+app.post('/import', authed, upload.single('file'), handler(controllers.batch.importXLSX))
+
+app.get('/tickets/export', authed, handler(controllers.tickets.exportXLSX));
+app.post('/tickets/import', authed, upload.single('file'), handler(controllers.tickets.importXLSX))
 app.patch('/tickets/:id', authed, handler(controllers.tickets.update));
 app.post('/tickets', authed, handler(controllers.tickets.create));
 app.get('/tickets', authed, handler(controllers.tickets.filter));

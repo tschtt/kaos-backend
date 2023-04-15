@@ -3,6 +3,15 @@ import fs from 'fs'
 import xlsx from 'xlsx'
 import { BadRequestError } from '../errors.js'
 
+const BATCHES = {
+    TANDA_1: 1,
+    TANDA_2: 2,
+    TANDA_3: 3,
+    PREVENTA: 4,
+    STAFF: 8,
+    FREE: 9,
+}
+
 export async function filter (req, res) {
     // get active event    
     const event = await database.find('event', { active: true })    
@@ -14,9 +23,7 @@ export async function filter (req, res) {
         ticket.person = persons.find(p => p.id === ticket.fk_person)
     }
     
-    res.send({
-        tickets,
-    })
+    res.send(tickets)
 }
 
 export async function find (req, res) {
@@ -26,13 +33,12 @@ export async function find (req, res) {
 export async function create (req, res) {
     const name = req.body.person.name;
     const contact = req.body.person.contact;
-    const pronouns = req.body.person.pronouns;
     const fk_ticket_status = req.body.fk_ticket_status;
 
     const event = await database.find('event', { active: true })
-    const batch = await database.find('batch', { fk_event: event.id, active: true })
+    const batch = await database.find('batch', { active: true })
     
-    const fk_person = await database.upsert('person', { name }, { name, contact, pronouns })
+    const fk_person = await database.upsert('person', { name }, { name, contact })
 
     const id = await database.create('ticket', {
         fk_event: event.id,
@@ -72,8 +78,11 @@ export async function exportXLSX (req, res) {
 
     const entradas = tickets.map(ticket => {
         const person = people.find(person => person.id === ticket.fk_person)
+        let tanda = ticket.fk_batch
+        if(tanda == 4) tanda = 'p'
+        if(tanda == 5) tanda = 'f'
         return {
-            tanda: ticket.fk_batch,
+            tanda,
             nombre: person.name,
             contacto: person.contact,
             notas: ticket.notes,
@@ -100,45 +109,86 @@ export async function exportXLSX (req, res) {
 
 export async function importXLSX (req, res) {
     const workbook = xlsx.readFile(req.file.path, { cellText:false, cellDates:true})
+    const event = await database.find('event', { active: true })
+    const batches = await database.filter('batch')
+    
+    const sheet_tickets = workbook.Sheets['Lista']
+    const sheet_staff = workbook.Sheets['Staff']
+    const sheet_free = workbook.Sheets['Free']
+
+    const raw_tickets = xlsx.utils.sheet_to_json(sheet_tickets, { raw: false, dateNF:'yyyy-mm-dd' })
+    const raw_staff = xlsx.utils.sheet_to_json(sheet_staff, { raw: false, dateNF:'yyyy-mm-dd' })
+    const raw_free = xlsx.utils.sheet_to_json(sheet_free, { raw: false, dateNF:'yyyy-mm-dd' })
+    
+    // parse excel data
+    
+    const batch_staff = batches.find(batch => batch.id === BATCHES.STAFF)
+    const batch_free = batches.find(batch => batch.id === BATCHES.FREE)
+    
+    const tickets_batches = raw_tickets.map(ticket => {
+        const batch = batches.find(batch => batch.name.toLowerCase() == ticket.tanda.toLowerCase() || batch.id == ticket.tanda)
+        return [
+            {
+                fk_event: event.id,
+                fk_batch: batch.id,
+                value: batch.value,
+                notes: ticket.notas,
+            },
+            {
+                name: ticket.nombre,
+                contact: ticket.contacto,
+            },
+        ]
+    })
+
+    const tickets_staff = raw_staff.map(ticket => {
+        return [
+            {
+                fk_event: event.id,
+                fk_batch: batch_staff.id,
+                value: batch_staff.value,
+                notes: ticket.notas,
+            },
+            {
+                name: ticket.nombre,
+                contact: ticket.contacto,
+            }
+        ]
+    })
+
+    const tickets_free = raw_free.map(ticket => {
+        return [
+            {
+                fk_event: event.id,
+                fk_batch: batch_free.id,
+                value: batch_free.value,
+                notes: ticket.notas,
+            },
+            {
+                name: ticket.nombre,
+                contact: ticket.contacto,
+            }
+        ]
+    })
+    
+    const tickets = [
+        ...tickets_batches,
+        ...tickets_staff,
+        ...tickets_free,
+    ]
+    
+    // insert data
+    await database.query('START TRANSACTION')
+        
     try {
-        await database.query('START TRANSACTION')
-
-        const event = await database.find('event', { active: true })
-        const batches = await database.filter('batch')
-
-        const sheet = workbook.Sheets['Entradas']
-        const entradas = xlsx.utils.sheet_to_json(sheet, { raw: false, dateNF:'yyyy-mm-dd' })
-        const tickets = entradas.map(entrada => {
-            return [
-                {
-                    fk_event: event.id,
-                    fk_batch: entrada.tanda,
-                    fk_ticket_status: 1,
-                    value: batches.find(b => b.id == entrada.tanda).value,
-                    notes: entrada.notas
-                },
-                {
-                    name: entrada.nombre,
-                    contact: entrada.contacto,
-                }
-            ]
-        }) 
-
         for (const [ticket, person] of tickets) {
-            const exists_person = await database.find('person', { name: person.name })
-            if(exists_person) {
-                await database.update('person', { name: person.name }, person)
-                ticket.fk_person = exists_person.id
-            } else {
-                ticket.fk_person = await database.create('person', person)
-            }
+            const fk_event = ticket.fk_event
+            const fk_batch = ticket.fk_batch
+            const fk_person = await database.upsert('person', { name: person.name }, person)
+
+            ticket.fk_person = fk_person
             
-            const exists = await database.find('ticket', { fk_event: event.id, fk_batch: ticket.fk_batch, fk_person: ticket.fk_person })
-            if(exists) {
-                await database.update('ticket', { id: exists.id }, ticket)
-            } else {
-                await database.create('ticket', ticket)
-            }
+            await database.upsert('ticket', { fk_event, fk_batch, fk_person }, ticket)
         }
         
         await database.query('COMMIT')

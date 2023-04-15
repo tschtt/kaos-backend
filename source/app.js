@@ -78,8 +78,10 @@ app.delete('/session', authed, handler(controllers.sessions.logout))
 app.get('/export', authed, handler(controllers.batch.exportXLSX))
 app.post('/import', authed, upload.single('file'), handler(controllers.batch.importXLSX))
 
-app.get('/tickets/export', authed, handler(controllers.tickets.exportXLSX));
+app.get('/batches', authed, handler(controllers.batches.filter))
+
 app.post('/tickets/import', authed, upload.single('file'), handler(controllers.tickets.importXLSX))
+app.get('/tickets/export', authed, handler(controllers.tickets.exportXLSX));
 app.patch('/tickets/:id', authed, handler(controllers.tickets.update));
 app.post('/tickets', authed, handler(controllers.tickets.create));
 app.get('/tickets', authed, handler(controllers.tickets.filter));

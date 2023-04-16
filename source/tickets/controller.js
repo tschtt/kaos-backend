@@ -18,12 +18,17 @@ export async function filter (req, res) {
     
     // get tickets for event with person
     const tickets = await database.filter('ticket', { fk_event: event.id })
+
+    if(!tickets.length) {
+        return res.send([])
+    }
+    
     const persons = await database.filter('person', { id: tickets.map(t => t.fk_person) })
     for (const ticket of tickets) {
         ticket.person = persons.find(p => p.id === ticket.fk_person)
     }
     
-    res.send(tickets)
+    return res.send(tickets)
 }
 
 export async function find (req, res) {
@@ -33,10 +38,11 @@ export async function find (req, res) {
 export async function create (req, res) {
     const name = req.body.person.name;
     const contact = req.body.person.contact;
+    const fk_batch = req.body.fk_batch;
     const fk_ticket_status = req.body.fk_ticket_status;
 
     const event = await database.find('event', { active: true })
-    const batch = await database.find('batch', { active: true })
+    const batch = await database.find('batch', { active: true, id: fk_batch })
     
     const fk_person = await database.upsert('person', { name }, { name, contact })
 
@@ -45,6 +51,7 @@ export async function create (req, res) {
         fk_batch: batch.id,
         fk_person,
         fk_ticket_status,
+        value: batch.value,
     })
 
     res.send({

@@ -233,7 +233,6 @@ export async function importXLSX(req, res) {
         
         const events_sheet = workbook.Sheets['Eventos']
         const events_raw = xlsx.utils.sheet_to_json(events_sheet, { raw: false, dateNF:'yyyy-mm-dd' })
-        console.log(events_raw)
         const events = events_raw.map(parse_event)
     
         for (const event of events) {

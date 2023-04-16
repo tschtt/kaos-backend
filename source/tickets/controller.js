@@ -36,10 +36,11 @@ export async function find (req, res) {
 }
 
 export async function create (req, res) {
-    const name = req.body.person.name;
-    const contact = req.body.person.contact;
     const fk_batch = req.body.fk_batch;
     const fk_ticket_status = req.body.fk_ticket_status;
+    const notes = req.body.notes
+    const name = req.body.person.name;
+    const contact = req.body.person.contact;
 
     const event = await database.find('event', { active: true })
     const batch = await database.find('batch', { active: true, id: fk_batch })
@@ -52,6 +53,7 @@ export async function create (req, res) {
         fk_person,
         fk_ticket_status,
         value: batch.value,
+        notes,
     })
 
     res.send({

@@ -188,14 +188,11 @@ export async function importXLSX (req, res) {
     await database.query('START TRANSACTION')
         
     try {
+        await database.remove('ticket', { fk_event: event.id })
+        
         for (const [ticket, person] of tickets) {
-            const fk_event = ticket.fk_event
-            const fk_batch = ticket.fk_batch
-            const fk_person = await database.upsert('person', { name: person.name }, person)
-
-            ticket.fk_person = fk_person
-            
-            await database.upsert('ticket', { fk_event, fk_batch, fk_person }, ticket)
+            ticket.fk_person = await database.upsert('person', { name: person.name }, person)
+            await database.create('ticket', ticket)
         }
         
         await database.query('COMMIT')

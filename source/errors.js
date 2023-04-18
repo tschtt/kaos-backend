@@ -18,3 +18,13 @@ export class UnauthorizedError extends Error {
     }
   }
 }
+
+export class ForbiddenError extends Error {
+  constructor() {
+    super('You dont have permission to this resource')
+    this.name = 'ForbiddenError'
+    if(Error.captureStackTrace) {
+      Error.captureStackTrace(this, ForbiddenError)
+    }
+  }
+}

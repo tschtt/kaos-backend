@@ -2,7 +2,7 @@ import express from 'express'
 import multer from 'multer'
 import * as controllers from './controllers.js'
 import { token } from '@tschtt/global'
-import { UnauthorizedError } from './errors.js'
+import { ForbiddenError, UnauthorizedError } from './errors.js'
 
 const ALLOWED_ORIGINS = process.env.APP_ALLOWED_ORIGINS.split(',')
 
@@ -68,7 +68,7 @@ function admin(req, res, next) {
     const payload = token.decode(auth_token)
 
     if (payload.type !== 'access' && ![1].includes(payload.fk_role)) {
-        throw new AuthenticationFailedError('Invalid token')
+        throw new ForbiddenError()
     }
 
     req.auth = payload
@@ -93,7 +93,7 @@ function producer(req, res, next) {
     const payload = token.decode(auth_token)
 
     if (payload.type !== 'access' && ![1, 2].includes(payload.fk_role)) {
-        throw new AuthenticationFailedError('Invalid token')
+        throw new ForbiddenError()
     }
 
     req.auth = payload
@@ -118,7 +118,7 @@ function staff(req, res, next) {
     const payload = token.decode(auth_token)
 
     if (payload.type !== 'access' && ![1, 2, 3].includes(payload.fk_role)) {
-        throw new AuthenticationFailedError('Invalid token')
+        throw new ForbiddenError()
     }
 
     req.auth = payload

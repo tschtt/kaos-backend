@@ -51,6 +51,81 @@ function authed (req, res, next) {
     next()
 }
 
+function admin(req, res, next) {
+    const authorization = req.headers.authorization
+
+    if (!authorization) {
+        throw new UnauthorizedError('Authorization header missing')
+    }
+
+    const auth_prefix = authorization.split(' ')[0]
+    const auth_token = authorization.split(' ')[1]
+
+    if (auth_prefix.toLowerCase() !== 'bearer') {
+        throw new UnauthorizedError('Authorization header malformed')
+    }
+
+    const payload = token.decode(auth_token)
+
+    if (payload.type !== 'access' && ![1].includes(payload.fk_role)) {
+        throw new AuthenticationFailedError('Invalid token')
+    }
+
+    req.auth = payload
+
+    next()
+}
+
+function producer(req, res, next) {
+    const authorization = req.headers.authorization
+
+    if (!authorization) {
+        throw new UnauthorizedError('Authorization header missing')
+    }
+
+    const auth_prefix = authorization.split(' ')[0]
+    const auth_token = authorization.split(' ')[1]
+
+    if (auth_prefix.toLowerCase() !== 'bearer') {
+        throw new UnauthorizedError('Authorization header malformed')
+    }
+
+    const payload = token.decode(auth_token)
+
+    if (payload.type !== 'access' && ![1, 2].includes(payload.fk_role)) {
+        throw new AuthenticationFailedError('Invalid token')
+    }
+
+    req.auth = payload
+
+    next()
+}
+
+function staff(req, res, next) {
+    const authorization = req.headers.authorization
+
+    if (!authorization) {
+        throw new UnauthorizedError('Authorization header missing')
+    }
+
+    const auth_prefix = authorization.split(' ')[0]
+    const auth_token = authorization.split(' ')[1]
+
+    if (auth_prefix.toLowerCase() !== 'bearer') {
+        throw new UnauthorizedError('Authorization header malformed')
+    }
+
+    const payload = token.decode(auth_token)
+
+    if (payload.type !== 'access' && ![1, 2, 3].includes(payload.fk_role)) {
+        throw new AuthenticationFailedError('Invalid token')
+    }
+
+    req.auth = payload
+
+    next()
+}
+
 function errorHandler(error, req, res, next) {
     switch (error.name) {
         case 'BadRequestError': 
@@ -71,21 +146,30 @@ const app = express()
 app.use(express.json())
 app.use(cors)
 
-app.post('/session', handler(controllers.sessions.login))
-app.patch('/session', handler(controllers.sessions.refresh))
-app.delete('/session', authed, handler(controllers.sessions.logout))
+app.route('/session')
+    .post(handler(controllers.sessions.login))
+    .patch(handler(controllers.sessions.refresh))
+    .delete(authed, handler(controllers.sessions.logout));
 
-app.get('/export', authed, handler(controllers.batch.exportXLSX))
-app.post('/import', authed, upload.single('file'), handler(controllers.batch.importXLSX))
+app.route('/xlsx/tickets')
+    .post(producer, upload.single('file'), handler(controllers.xlsx.ticket_import))
+    .get(producer, handler(controllers.xlsx.ticket_export));
 
-app.get('/batches', authed, handler(controllers.batches.filter))
+app.route('/xlsx')
+    .post(admin, upload.single('file'), handler(controllers.xlsx.global_import))
+    .get(admin, handler(controllers.xlsx.global_export));
 
-app.post('/tickets/import', authed, upload.single('file'), handler(controllers.tickets.importXLSX))
-app.get('/tickets/export', authed, handler(controllers.tickets.exportXLSX));
-app.patch('/tickets/:id', authed, handler(controllers.tickets.update));
-app.post('/tickets', authed, handler(controllers.tickets.create));
-app.get('/tickets', authed, handler(controllers.tickets.filter));
+app.route('/batches')
+    .get(staff, handler(controllers.batches.filter));
 
+app.route('/tickets/:id')
+    .patch(staff, handler(controllers.tickets.update));
+
+app.route('/tickets')
+    .post(staff, handler(controllers.tickets.create))
+    .get(staff, handler(controllers.tickets.filter));
+
+// health
 app.get('/', (req, res) => res.send({ success: true, message: 'Bienvenido a la API de Kaos Rave!'}))
 
 app.use(errorHandler)

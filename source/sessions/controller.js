@@ -31,8 +31,10 @@ export async function login(req, res) {
     throw new BadRequestError('Invalid password')
   }
 
-  const access_token = token.generate({ fk_user: user.id, type: 'access' }, { expiration: EXPIRATION_ACCESS })
-  const refresh_token = token.generate({ fk_user: user.id, type: 'refresh' }, { expiration: EXPIRATION_REFRESH })
+  user.role = await database.find('role', { id: user.fk_role })
+  
+  const access_token = token.generate({ fk_user: user.id, fk_role: user.fk_role, type: 'access' }, { expiration: EXPIRATION_ACCESS })
+  const refresh_token = token.generate({ fk_user: user.id, fk_role: user.fk_role, type: 'refresh' }, { expiration: EXPIRATION_REFRESH })
 
   await sessions.remove({ fk_user: user.id })
   await sessions.create({ fk_user: user.id, refresh_token })
@@ -75,10 +77,12 @@ export async function refresh(req, res) {
 
   const user = await users.find({ id: payload.fk_user })
 
+  user.role = await database.find('role', { id: user.fk_role })
+  
   delete user.password
 
-  const access_token = token.generate({ fk_user: user.id, type: 'access' }, { expiration: EXPIRATION_ACCESS })
-  const refresh_token = token.generate({ fk_user: user.id, type: 'refresh' }, { expiration: EXPIRATION_REFRESH })
+  const access_token = token.generate({ fk_user: user.id, fk_role: user.fk_role, type: 'access' }, { expiration: EXPIRATION_ACCESS })
+  const refresh_token = token.generate({ fk_user: user.id, fk_role: user.fk_role, type: 'refresh' }, { expiration: EXPIRATION_REFRESH })
 
   await sessions.remove({ fk_user: payload.fk_user })
   await sessions.create({ fk_user: payload.fk_user, refresh_token })

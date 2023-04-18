@@ -67,7 +67,7 @@ function admin(req, res, next) {
 
     const payload = token.decode(auth_token)
 
-    if (payload.type !== 'access' && ![1].includes(payload.fk_role)) {
+    if (payload.type !== 'access' || ![1].includes(payload.fk_role)) {
         throw new ForbiddenError()
     }
 
@@ -92,7 +92,7 @@ function producer(req, res, next) {
 
     const payload = token.decode(auth_token)
 
-    if (payload.type !== 'access' && ![1, 2].includes(payload.fk_role)) {
+    if (payload.type !== 'access' || ![1, 2].includes(payload.fk_role)) {
         throw new ForbiddenError()
     }
 
@@ -117,7 +117,7 @@ function staff(req, res, next) {
 
     const payload = token.decode(auth_token)
 
-    if (payload.type !== 'access' && ![1, 2, 3].includes(payload.fk_role)) {
+    if (payload.type !== 'access' || ![1, 2, 3].includes(payload.fk_role)) {
         throw new ForbiddenError()
     }
 

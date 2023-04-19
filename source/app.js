@@ -146,6 +146,9 @@ const app = express()
 app.use(express.json())
 app.use(cors)
 
+app.route('/session/password')
+    .post(handler(controllers.sessions.password_reset))
+
 app.route('/session')
     .post(handler(controllers.sessions.login))
     .patch(handler(controllers.sessions.refresh))

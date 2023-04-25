@@ -135,7 +135,7 @@ function errorHandler(error, req, res, next) {
             return res.status(401).send({ success: false, message: error.message })
         default:
             console.log(error)
-            return res.status(500).send({ success: false, message: 'Internal error' })
+            return res.status(500).send({ success: false, message: 'Se produjo un error interno.' })
     }
 }
   

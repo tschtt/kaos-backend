@@ -12,23 +12,23 @@ export async function login(req, res) {
   const password = req.body.password
 
   if (!username) {
-    throw new BadRequestError('Missing username')
+    throw new BadRequestError('El campo "Usuario" es obligatorio.')
   }
 
   if (!password) {
-    throw new BadRequestError('Missing password')
+    throw new BadRequestError('El campo "Contraseña" es obligatorio.')
   }
 
   const user = await users.find({ username })
 
   if (!user) {
-    throw new BadRequestError('Could not fin user')
+    throw new BadRequestError('No hay ningún usuario con este nombre.')
   }
 
   const match = await hash.check(password, user.password)
 
   if (!match) {
-    throw new BadRequestError('Invalid password')
+    throw new BadRequestError('La contraseña no es correcta.')
   }
 
   if (user.password_update) {

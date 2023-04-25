@@ -1,3 +1,4 @@
+import { BadRequestError } from "../errors.js"
 import { database } from "@tschtt/global"
 import xlsx from 'xlsx'
 import fs from 'fs'
@@ -399,14 +400,33 @@ export async function ticket_export (req, res) {
 }
 
 export async function ticket_import (req, res) {
+    // read xlsx file
+    
     const workbook = xlsx.readFile(req.file.path, { cellText:false, cellDates:true})
+    
+    // get base data
+    
     const event = await database.find('event', { active: true })
     const batches = await database.filter('batch')
+    
+    // get sheets
     
     const sheet_tickets = workbook.Sheets['Lista']
     const sheet_staff = workbook.Sheets['Staff']
     const sheet_free = workbook.Sheets['Free']
 
+    if(!sheet_tickets) {
+        throw new BadRequestError('El archivo no es valido')
+    }
+
+    if(!sheet_staff) {
+        throw new BadRequestError('El archivo no es valido')
+    }
+
+    if(!sheet_free) {
+        throw new BadRequestError('El archivo no es valido')
+    }
+    
     const raw_tickets = xlsx.utils.sheet_to_json(sheet_tickets, { raw: false, dateNF:'yyyy-mm-dd' })
     const raw_staff = xlsx.utils.sheet_to_json(sheet_staff, { raw: false, dateNF:'yyyy-mm-dd' })
     const raw_free = xlsx.utils.sheet_to_json(sheet_free, { raw: false, dateNF:'yyyy-mm-dd' })
